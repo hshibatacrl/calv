@@ -16,21 +16,21 @@ This project is intended as a starting point and implements only a minimal visua
 I envision using this repository by forking it. Deleting unnecessary functionality and implementing necessary functionality.
 
 ### 3D View
-    View 3D models, point clouds, etc. using OpenGL
-    If you are not using 3D View, you must edit mainwindow.(cpp,h,ui)
-    Define USE_3D_VIEW in w2rViewer.pro
+View 3D models, point clouds, etc. using OpenGL
+If you are not using 3D View, you must edit mainwindow.(cpp,h,ui)
+Define USE_3D_VIEW in w2rViewer.pro
 
 ### Plot View
-    Use QCustomPlot to plot dynamic and static data
-    Define USE_PLOT_VIEW in w2rViewer.pro
+Use QCustomPlot to plot dynamic and static data
+Define USE_PLOT_VIEW in w2rViewer.pro
 
 ### Image View
-    Display image files. Scaling and panning are implemented.
-    Define USE_IMAGE_VIEW in w2rViewer.pro
+Display image files. Scaling and panning are implemented.
+Define USE_IMAGE_VIEW in w2rViewer.pro
 
 ### Map View
-    Use QGeoView to view a map and the data on it.
-    Define USE_MAP_VIEW in w2rViewer.pro
+Use QGeoView to view a map and the data on it.
+Define USE_MAP_VIEW in w2rViewer.pro
 
 ## Platform
 Windows (Qt 5.12.12 Mingw64)
