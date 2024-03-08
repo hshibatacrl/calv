@@ -1,6 +1,10 @@
+#ifndef CUSTOMFLOATINGWINDOW_H
+#define CUSTOMFLOATINGWINDOW_H
+
+/*
 MIT License
 
-Copyright (c) 2024 WagonWheelRobotics
+Copyright (c) 2021 WagonWheelRobotics
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +23,27 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+*/
+
+#include <QMainWindow>
+
+class customFloatingWindow : public QMainWindow
+{
+    Q_OBJECT
+public:
+    explicit customFloatingWindow(QWidget *widget, QWidget *parent = nullptr);
+    virtual ~customFloatingWindow();
+    QWidget *takeWidget(void);
+    QWidget *widget() const;
+
+protected:
+    virtual bool nativeEvent(const QByteArray &eventType, void *message, long *result);
+
+    virtual void closeEvent(QCloseEvent *e);
+
+signals:
+
+
+};
+
+#endif // CUSTOMFLOATINGWINDOW_H

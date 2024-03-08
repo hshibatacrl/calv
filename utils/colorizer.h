@@ -1,6 +1,10 @@
+#ifndef COLORIZER_H
+#define COLORIZER_H
+
+/*
 MIT License
 
-Copyright (c) 2024 WagonWheelRobotics
+Copyright (c) 2021 WagonWheelRobotics
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +23,27 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+*/
+
+#include "interp1d.h"
+
+#include <QVariantMap>
+#include <QColor>
+
+class colorizer
+{
+public:
+    colorizer(const QVariantMap &params);
+    virtual ~colorizer();
+
+    QColor solve(double x);
+private:
+    interp1d<double> *_x2a[2];
+    QColor _col[3];
+    double _v[3];
+    int _nos;
+    double _delta_a;
+    double _delta_c;
+};
+
+#endif // COLORIZER_H

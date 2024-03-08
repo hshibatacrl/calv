@@ -1,6 +1,10 @@
+#ifndef CUSTOMMAPVIEW_H
+#define CUSTOMMAPVIEW_H
+
+/*
 MIT License
 
-Copyright (c) 2024 WagonWheelRobotics
+Copyright (c) 2021 WagonWheelRobotics
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +23,42 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+*/
+
+#include <QGeoView/QGVMap.h>
+class QNetworkAccessManager;
+class QNetworkDiskCache;
+class QMenu;
+class QGVLayer;
+class QGVWidget;
+
+class customMapView : public QGVMap
+{
+    Q_OBJECT
+public:
+    explicit customMapView(QWidget *parent = nullptr);
+    virtual ~customMapView();
+
+    Q_INVOKABLE void initView(void);
+    virtual QSize sizeHint() const;
+    void flyTo(QVariantList rc);
+
+    void removeItems(QString path);
+
+signals:
+
+private:
+    int prepareContextMenu(const QPoint &p, QMenu &menu);
+
+    QAction *addLayerMenu(QMenu &menu, QGVItem *item, int enabled = -1);
+
+private:
+    QGVWidget *_compass;
+    QGVWidget *_zoom;
+    QGVWidget *_scale;
+    QList<QGVLayer*> _basemapLayers;
+    static QNetworkAccessManager *_manager;
+    static QNetworkDiskCache *_cache;
+};
+
+#endif // CUSTOMMAPVIEW_H

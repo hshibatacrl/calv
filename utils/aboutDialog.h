@@ -1,6 +1,10 @@
+#ifndef ABOUTD_H
+#define ABOUTD_H
+
+/*
 MIT License
 
-Copyright (c) 2024 WagonWheelRobotics
+Copyright (c) 2021 WagonWheelRobotics
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +23,27 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+*/
+
+#include <QDialog>
+
+namespace Ui {
+class aboutDialog;
+}
+
+class aboutDialog : public QDialog
+{
+    Q_OBJECT
+
+public:
+    explicit aboutDialog(QWidget *parent = nullptr);
+    ~aboutDialog();
+
+private slots:
+    void on_pbExploreConfigFolder_clicked();
+
+private:
+    Ui::aboutDialog *ui;
+};
+
+#endif // ABOUTD_H

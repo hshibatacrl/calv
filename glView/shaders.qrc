@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/gl">
+        <file>gl_pcloud_entity.vert</file>
+        <file>gl_pcloud_entity1.frag</file>
+        <file>gl_pcloud_entity2.frag</file>
+    </qresource>
+    <qresource prefix="/gl/models">
+        <file>bunny.mqo</file>
+    </qresource>
+</RCC>

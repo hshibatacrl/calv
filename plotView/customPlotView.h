@@ -1,6 +1,10 @@
+#ifndef CUSTOMPLOTVIEW_H
+#define CUSTOMPLOTVIEW_H
+
+/*
 MIT License
 
-Copyright (c) 2024 WagonWheelRobotics
+Copyright (c) 2021 WagonWheelRobotics
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +23,30 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+*/
+
+#include <QVariantMap>
+#include <QVector>
+
+class QWidget;
+
+class customPlotView
+{
+public:
+    customPlotView(QVariantMap m);
+
+    QWidget *widget() const;
+
+    virtual void addData(const QVector<double> &data);
+
+protected:
+    void setWidget(QWidget *newWidget);
+
+private:
+    QWidget *_widget;
+
+protected:
+    enum {STATIC, REALTIME_AUTOSCROLL, REALTIME_NOAUTOSCROLL} _realtimeMode;
+};
+
+#endif // CUSTOMPLOTVIEW_H

@@ -1,6 +1,7 @@
+/*
 MIT License
 
-Copyright (c) 2024 WagonWheelRobotics
+Copyright (c) 2021 WagonWheelRobotics
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +20,41 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+*/
+
+#include "QGVLayerGSI.h"
+
+namespace {
+// clang-format off
+const QStringList URLTemplates = {
+    "https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png",
+    "https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png",
+    "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg",
+};
+// clang-format on
+}
+
+QGVLayerGSI::QGVLayerGSI(int serverNumber) : mUrl(URLTemplates.value(serverNumber))
+{
+    setName("GSI");
+    setDescription("Copyrights 息 GSI");
+}
+
+int QGVLayerGSI::minZoomlevel() const
+{
+    return 2;
+}
+
+int QGVLayerGSI::maxZoomlevel() const
+{
+    return 18;
+}
+
+QString QGVLayerGSI::tilePosToUrl(const QGV::GeoTilePos &tilePos) const
+{
+    QString url = mUrl.toLower();
+    url.replace("{z}", QString::number(tilePos.zoom()));
+    url.replace("{x}", QString::number(tilePos.pos().x()));
+    url.replace("{y}", QString::number(tilePos.pos().y()));
+    return url;
+}

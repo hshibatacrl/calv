@@ -1,6 +1,7 @@
+/*
 MIT License
 
-Copyright (c) 2024 WagonWheelRobotics
+Copyright (c) 2021 WagonWheelRobotics
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +20,26 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+*/
+
+#include "customPlotView.h"
+
+customPlotView::customPlotView(QVariantMap m)
+{
+    _realtimeMode = STATIC;
+}
+
+QWidget *customPlotView::widget() const
+{
+    return _widget;
+}
+
+void customPlotView::addData(const QVector<double> &data)
+{
+    // for realtime plot
+}
+
+void customPlotView::setWidget(QWidget *newWidget)
+{
+    _widget = newWidget;
+}

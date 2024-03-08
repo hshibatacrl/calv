@@ -1,6 +1,10 @@
+#ifndef INTERP1D_H
+#define INTERP1D_H
+
+/*
 MIT License
 
-Copyright (c) 2024 WagonWheelRobotics
+Copyright (c) 2021 WagonWheelRobotics
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +23,33 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+*/
+
+template <typename T> class interp1d
+{
+public:
+    interp1d(T xa, T xb, T ya, T yb)
+    {
+        if(xa==xb)
+        {
+            a=0.0;
+            b=yb;
+        }
+        else
+        {
+            a = (yb-ya)/(xb-xa);
+            b = yb-a*xb;
+        }
+    }
+
+    T interp(T x)
+    {
+        return a*x+b;
+    }
+
+private:
+    T a;
+    T b;
+};
+
+#endif // INTERP1D_H

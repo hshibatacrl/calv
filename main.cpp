@@ -1,6 +1,7 @@
+/*
 MIT License
 
-Copyright (c) 2024 WagonWheelRobotics
+Copyright (c) 2021 WagonWheelRobotics
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +20,28 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+*/
+
+#include "MainWindow.h"
+
+
+#include <QApplication>
+
+#include "logging.h"
+
+
+
+int main(int argc, char *argv[])
+{
+    QApplication a(argc, argv);
+
+    MainWindow w;
+    customLogging::setWidget(&w);
+
+    w.show();
+    auto ret= a.exec();
+
+    customLogging::setWidget(nullptr);
+
+    return ret;
+}
