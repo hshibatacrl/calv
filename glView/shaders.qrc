@@ -5,6 +5,9 @@
         <file>gl_pcloud_entity2.frag</file>
     </qresource>
     <qresource prefix="/gl/models">
-        <file>bunny.mqo</file>
+        <file>camera.mtl</file>
+        <file>camera.obj</file>
+        <file>camera2.mtl</file>
+        <file>camera2.obj</file>
     </qresource>
 </RCC>

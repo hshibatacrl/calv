@@ -1,26 +1,13 @@
 /*
-MIT License
+Copyright 2021 Wagon Wheel Robotics
 
-Copyright (c) 2021 WagonWheelRobotics
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+
 
 #include "gl_model_entity.h"
 
@@ -70,26 +57,10 @@ QString gl_model_entity::getFileName(const QString &fileName)
             auto fil=dir.entryInfoList(QStringList()<<fi.baseName()+".*",QDir::Files|QDir::Readable);
             foreach(auto &i,fil)
             {
-                auto tfilename=temp+"/"+i.fileName();
-                QFile tfile(tfilename);
-                if(tfile.exists())
-                {
-                    auto r=tfile.remove();
-                    auto es=tfile.errorString();
-                    if(!r) qWarning()<<"Deleting temp file error"<<tfilename<<es;
-                }
-                {
-                    auto r=QFile::copy(i.absoluteFilePath(), tfilename);
-                    auto es=tfile.errorString();
-                    if(!r) qWarning()<<"Copying temp file error"<<tfilename<<es;
-
-                    //add write permisson (copy from resource has readonly) to delete it next time
-                    QFile tfile(tfilename);
-                    tfile.setPermissions(tfile.permissions() | QFileDevice::WriteOwner | QFileDevice::WriteUser);
-                }
+                QFile::copy(i.absoluteFilePath(), temp+"/"+i.fileName());
                 if(fi.fileName() == i.fileName())
                 {
-                    ret = tfilename;
+                    ret = temp+"/"+i.fileName();
                 }
             }
         }
@@ -117,7 +88,7 @@ void gl_model_entity::load(void)
         {
             if(!(*i).visible) continue;
 
-            if(sscanf((*i).name.c_str(),"#OBJ%d_",&a)==1)
+            if(sscanf_s((*i).name.c_str(),"#OBJ%d_",&a)==1)
             {
                 (*i).obj_id=a;
                 if(h<a) h=a;

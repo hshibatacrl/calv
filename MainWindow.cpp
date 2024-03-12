@@ -1,3 +1,17 @@
+/**
+ * @file MainWindow.cpp
+ *
+ * Definitions of camera objects used in the calibration process
+ *
+ * Copyright 2023
+ * Carnegie Robotics, LLC
+ * 4501 Hatfield Street, Pittsburgh, PA 15201
+ * https://www.carnegierobotics.com
+ *
+ * Significant history (date, user, job code, action):
+ *   2023-12-13, hshibata@carnegierobotics.com, IRAD2033, Taken and modified file from open source.
+ */
+
 /*
 MIT License
 
@@ -33,35 +47,69 @@ SOFTWARE.
 #include <QFileDialog>
 #include <QClipboard>
 #include <QApplication>
+#include <QFile>
 #include <QTimer>
 #include <QImage>
+#include <QLabel>
 
-#include <QVector>
-#include <QVariantList>
-#include <QVariantMap>
-
+#include "configStorage.h"
+#include "customGLWidget.h"
 #include "customFloatingWindow.h"
 #include "customMdiSubWindow.h"
+#include "aboutDialog.h"
+#include "fdd.h"
+#include "tcpClientDialog.h"
+#include "pointcloud_packet.h"
+#include "pose_packet.h"
+#include "orb_packet_type.h"
 
-#ifdef USE_MAP_VIEW
-#include "customMapView.h"
-#endif
-
-#ifdef USE_IMAGE_VIEW
-#include "customImageWidget.h"
-#endif
-
-#ifdef USE_3D_VIEW
-#include "customGLWidget.h"
-#include "gl_model_entity.h"
-#include "gl_poses_entity.h"
 #include "gl_pcloud_entity.h"
 #include "gl_polyline_entity.h"
-#endif
+#include "gl_poses_entity.h"
+#include "gl_model_entity.h"
 
-#ifdef USE_PLOT_VIEW
-#include "qcpPlotView.h"
-#endif
+void storeLastFolder(QString fileName, QString label)
+{
+    QFileInfo fi(fileName);
+    configStorage c(QString("lastFolder"),nullptr);
+    auto p=c.load("last");
+    p[label]=fi.absolutePath();
+    c.save(p,"last");
+}
+
+QString getLastFolder(QString label)
+{
+    configStorage c(QString("lastFolder"),nullptr);
+    auto p=c.load("last");
+    if(p.contains(label)) return p[label].toString();
+    return QString();
+}
+
+#define VIEW3D_INDEX -1
+#define IMAGE_INDEX 0
+#define ELAPSED_INDEX 100
+
+#define IS_TCP_ACTIVE _dec->status().startsWith("CONN")
+#define IS_PBK_ACTIVE _dec->status().startsWith("PLAY")
+
+bool MainWindow::IS_ENABLE(int x) const
+{
+    return _mdi.contains(x);
+}
+
+bool MainWindow::IS_SHOWN(int x) const
+{
+    if(IS_ENABLE(x)) return _mdi[x]->isVisible();
+    return false;
+}
+
+void MainWindow::reset()
+{
+    foreach(auto key, _mdi.keys())
+    {
+        QMetaObject::invokeMethod(_mdi[key]->widget(),"reset",Qt::QueuedConnection);
+    }
+}
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -69,67 +117,128 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    _dec = new fdd(this);
+    _inpStatus = new QLabel(this);
+    _logStatus = new QLabel(this);
+    ui->statusbar->addWidget(_inpStatus);
+    ui->statusbar->addWidget(_logStatus);
+
     _glWidget = nullptr;
-    _stockModelPending = nullptr;
-    _stockModel = nullptr;
-
-    ui->peLog->setCenterOnScroll(true);
-    //ui->mdiArea->tileSubWindows();
-
-    setWindowTitle(APP_NAME);
-
-#ifdef USE_IMAGE_VIEW
-#ifdef EXAMPLE_CODE_IMAGE
-    openImage(EXAMPLE_CODE_IMAGE);
-#endif
-#endif
-
-#ifdef USE_PLOT_VIEW
-#ifdef EXAMPLE_CODE_QCP
-#ifdef EXAMPLE_CODE_QCP_STATIC_PLOT
-    create_qcp_example_static();
-#else
-    create_qcp_example_realtime();
-#endif
-#endif
-#endif
 
     create3DView();
 
-#ifdef USE_MAP_VIEW
-    createMapView();
-#endif
+    _logging = 0;
+    _init = 1;
 
-    connect(ui->menuView, &QMenu::aboutToShow, this, [=](){
-        ui->action3D_View->setChecked(_glWidget->parentWidget()->isVisible());
-#ifdef USE_MAP_VIEW
-        ui->actionMap_View->setChecked(_mapWidget->parentWidget()->isVisible());
-#endif
+    _timer = new QTimer(this);
+    _timer->start(1000);
+
+    connect(_timer,&QTimer::timeout, this, [=](){
+        QString text="LOG ";
+        if(_logging && _log!=nullptr)
+        {
+            QFileInfo fi(*_log);
+            text += fi.fileName()+ QString(" %1MB").arg(fi.size()/(1024.0*1024.0),0, 'f', 3);
+        }
+        else
+        {
+            text += "IDLE";
+        }
+        _logStatus->setText(text);
+        _inpStatus->setText(_dec->status());
     });
+
+    connect(_dec, &fdd::received, this, [=](const QByteArray &packet)
+    {
+        if(packet.size()>4)
+        {
+            const uint32_t *magic=(const uint32_t*)packet.data();
+            if(magic[0]==PC_MAGIC)
+            {
+                const pc_packet_header_t *p = (const pc_packet_header_t *)packet.data();
+                qDebug()<<"Point Cloud" << p->length;
+                _glWidget->delayLoad(new gl_pcloud_entity, packet);
+            }
+            if(magic[0]==POSE_MAGIC)
+            {
+                const pose_packet_header_t *p = (const pose_packet_header_t *)packet.data();
+                qDebug()<<"Pose Cloud" << p->length;
+                if(_stockModel.contains(p->data[0]))
+                {
+                    _glWidget->delayLoad(new gl_poses_entity(_stockModel[p->data[0]]), packet);
+                }
+                else
+                {
+
+                }
+            }
+        }
+#if 0
+        const orb_packet_header_t *p = (const orb_packet_header_t*)packet.data();
+        int index = IMAGE_INDEX + (p->type & ORB_PACKET_TYPE_RIGHT);
+        if(_init)
+        {
+            if(index) return; //wait for LEFT for first
+            _init=0;
+        }
+        if(!_mdi.contains(index))
+        {
+            auto w=new customMdiSubWindow(this);
+            w->setWidget(new fdImage(this));
+            ui->mdiArea->addSubWindow(w);
+            _mdi[index]=w;
+            w->resize(640,408);
+            w->show();
+            w->setWindowTitle(index?"RIGHT":"LEFT");
+            auto params=imageViewOptionsDialog::iniParams();
+            QMetaObject::invokeMethod(w->widget(),"paramChanged",Qt::QueuedConnection,Q_ARG(QVariantMap, params));
+        }
+        QMetaObject::invokeMethod(_mdi[index]->widget(),"received",Qt::QueuedConnection,Q_ARG(QByteArray, packet));
+
+        if(p->type & ORB_PACKET_TYPE_ELAPSED)
+        {
+            if(!_mdi.contains(ELAPSED_INDEX))
+            {
+                auto w=new customMdiSubWindow(this);
+                w->setWidget(new fdElapsed(this));
+                ui->mdiArea->addSubWindow(w);
+                _mdi[ELAPSED_INDEX]=w;
+                w->resize(640,816);
+                w->show();
+                w->setWindowTitle("ELAPSED");
+            }
+            QMetaObject::invokeMethod(_mdi[ELAPSED_INDEX]->widget(),"received",Qt::QueuedConnection,Q_ARG(QByteArray, packet));
+        }
+#endif
+        writeLog(packet);
+    });
+
+    connect(ui->menuComm,&QMenu::aboutToShow, this, [=](){
+        auto a=_dec->status();
+        ui->actionConnect_to_Server->setChecked(IS_TCP_ACTIVE);
+    });
+    connect(ui->menuFile,&QMenu::aboutToShow, this, [=](){
+        bool recActive=_logging;
+        ui->actionRecord_Log->setChecked(recActive);
+        ui->actionPlayback_Log->setChecked(IS_PBK_ACTIVE);
+    });
+    connect(ui->menuView, &QMenu::aboutToShow, this, [=](){
+        if(_glWidget->parentWidget())
+        {
+            ui->action3D_View->setChecked(_glWidget->parentWidget()->isVisible());
+        }
+    });
+
+    setWindowTitle(APP_NAME);
+
+    ui->peLog->setCenterOnScroll(true);
+    //ui->mdiArea->tileSubWindows();
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
 }
-
-#ifdef USE_IMAGE_VIEW
-void MainWindow::openImage(const QString &fileName)
-{
-    QImage image(fileName);
-    if(!image.isNull())
-    {
-        QFileInfo fi(fileName);
-        auto img=new customImageWidget(this);
-        auto sub=new customMdiSubWindow(img, this);
-        ui->mdiArea->addSubWindow(sub);
-        img->setImage(image);
-        sub->setWindowTitle(fi.baseName());
-        sub->show();
-        _mdi.append(sub);
-    }
-}
-#endif
 
 void MainWindow::create3DView()
 {
@@ -139,6 +248,7 @@ void MainWindow::create3DView()
         _glWidget->setProperty("DETACHABLE",false);
         auto sub=new customMdiSubWindow(_glWidget, this);
         ui->mdiArea->addSubWindow(sub);
+        _mdi[VIEW3D_INDEX] = sub;
         sub->setWindowTitle("3D View");
         sub->show();
 
@@ -146,49 +256,44 @@ void MainWindow::create3DView()
 
         connect(_glWidget, &customGLWidget::initialized,[=]()
         {
-            _stockModelPending = new gl_model_entity;
-            _stockModelPending->setReference(true);
-            connect(_glWidget, &customGLWidget::entityLoadedByWidget,[=](QObject*o)
-            {
-                if(qobject_cast<gl_entity_ctx*>(o) == _stockModelPending)
+            QStringList models;
+            models << ":/gl/models/camera.obj" << ":/gl/models/camera2.obj";
+
+            connect(_glWidget, &customGLWidget::entityLoadedByWidget,[=](QObject*o){
+                for(auto i:_stockModelPending.keys())
                 {
-                    _stockModel = _stockModelPending;
-
-#ifdef EXAMPLE_CODE_3D
-                    //test code
-                    if(_stockModel!=nullptr)
+                    if(qobject_cast<gl_entity_ctx*>(o) == _stockModelPending[i])
                     {
-                        QByteArray dummy;
-                        dummy.append((uint8_t)0x00);
-                        _glWidget->delayLoad(new gl_poses_entity(_stockModel), dummy);
-                        dummy[0]=1;
-                        _glWidget->delayLoad(new gl_poses_entity(_stockModel), dummy);
+                        _stockModel[i] = _stockModelPending[i];
                     }
-
-                    {
-                        QByteArray dummy;
-                        dummy.append(1);
-                        _glWidget->delayLoad(new gl_polyline_entity, dummy);
-                        _glWidget->delayLoad(new gl_pcloud_entity, dummy);
-                    }
-#endif
                 }
             });
-            _glWidget->delayLoad(_stockModelPending, ":/gl/models/bunny.mqo");
+
+            for(int i=0;i<models.size();i++)
+            {
+                QString model = models[i];
+                _stockModelPending[i] = new gl_model_entity;
+                _stockModelPending[i]->setReference(true);
+                _glWidget->delayLoad(_stockModelPending[i], model.toStdString().c_str());
+            }
         });
     }
 }
 
-#ifdef USE_MAP_VIEW
-void MainWindow::createMapView()
+
+void MainWindow::logMessage(int level,QString text)
 {
-    _mapWidget = new customMapView(this);
-    _mapWidget->layout()->setContentsMargins(0,0,0,0);
-    customMdiSubWindow *sub = new customMdiSubWindow(_mapWidget, this);
-    sub->setWindowTitle("Map View");
-    ui->mdiArea->addSubWindow(sub);
+    if(level<0)
+    {
+        ui->peLog->appendHtml(text);
+    }
+    else
+    {
+        ui->statusbar->showMessage(text,5000);
+//            ui->peLog->appendPlainText(text);
+    }
 }
-#endif
+
 
 void MainWindow::attachToMdi(QObject *fltWindow)
 {
@@ -236,18 +341,43 @@ void MainWindow::detachFromMdi(QObject *mdiWindow)
     }
 }
 
-void MainWindow::logMessage(int level,QString text)
+
+
+void MainWindow::closeLog()
 {
-    if(level<0)
+    if(_logging)
     {
-        ui->peLog->appendHtml(text);
-    }
-    else
-    {
-        ui->statusbar->showMessage(text,5000);
-//      ui->peLog->appendPlainText(text);
+        if(_log!=nullptr)
+        {
+            _log->close();
+            _log->deleteLater();
+            _log = nullptr;
+        }
+        _logging = 0;
     }
 }
+
+void MainWindow::writeLog(const QByteArray &bytes)
+{
+    if(_logging)
+    {
+        if(_log!=nullptr)
+        {
+            _log->write(bytes);
+        }
+    }
+}
+
+QString MainWindow::logFolder()
+{
+    QString x=getLastFolder("log");
+    if(x.isEmpty())
+    {
+        x=QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    }
+    return x;
+}
+
 
 
 void MainWindow::on_actionConfigure_3D_View_triggered()
@@ -255,124 +385,87 @@ void MainWindow::on_actionConfigure_3D_View_triggered()
     _glWidget->viewOptionsTriggered();
 }
 
-#include "aboutDialog.h"
+
 void MainWindow::on_actionAbout_triggered()
 {
     aboutDialog dlg;
-    dlg.exec();    
+    dlg.exec();
 }
 
+
+void MainWindow::on_actionConnect_to_Server_triggered()
+{
+    if(IS_TCP_ACTIVE)
+    {
+        _dec->idle();
+    }
+    else
+    {
+        tcpClientDialog dlg;
+        dlg.setWindowTitle("Server ip");
+        if(dlg.exec()==QDialog::Accepted)
+        {
+            auto p=dlg.param();
+            if(p.contains("lePort") && p.contains("leAddr"))
+            {
+                int port = p["lePort"].toInt();
+                if(port>0)
+                {
+                    reset();
+                    _dec->connectToCamera(p["leAddr"].toString(),port);
+                }
+            }
+        }
+    }
+}
+
+
+void MainWindow::on_actionRecord_Log_triggered()
+{
+    if(_logging)
+    {
+        closeLog();
+    }
+    else
+    {
+        auto def=logFolder()+"/*.calog";
+        auto fileName=QFileDialog::getSaveFileName(this,"Log File to Save",def,"Calib Log(*.calog)");
+        if(!fileName.isEmpty())
+        {
+            _log = new QFile(fileName);
+            if(_log->open(QFile::WriteOnly))
+            {
+                _logging = 1;
+                storeLastFolder(fileName,"log");
+            }
+            else
+            {
+                _log->deleteLater();
+            }
+        }
+    }
+}
+
+
+void MainWindow::on_actionPlayback_Log_triggered()
+{
+    if(IS_PBK_ACTIVE)
+    {
+        _dec->idle();
+    }
+    else
+    {
+        auto fileName=QFileDialog::getOpenFileName(this,"Log File to Playback",logFolder(),"Calib Log(*.calog)");
+        if(!fileName.isEmpty())
+        {
+            storeLastFolder(fileName,"log");
+            reset();
+            _dec->startPlayback(fileName);
+        }
+    }
+}
 
 void MainWindow::on_action3D_View_triggered()
 {
     if(_glWidget->parentWidget()->isHidden()) _glWidget->parentWidget()->show(); else _glWidget->parentWidget()->hide();
 }
-
-#ifdef USE_MAP_VIEW
-void MainWindow::on_actionMap_View_triggered()
-{
-    if(_mapWidget->parentWidget()->isHidden()) _mapWidget->parentWidget()->show(); else _mapWidget->parentWidget()->hide();
-}
-#endif
-
-#ifdef USE_PLOT_VIEW
-#ifdef EXAMPLE_CODE_QCP
-#ifdef EXAMPLE_CODE_QCP_STATIC_PLOT
-void MainWindow::create_qcp_example_static()
-{
-    QVariantMap  m;
-
-    QStringList header;
-    header << "X" << "Y";
-    m["headers"] = header;
-    QVector<double> x,y;
-    for(double i=0.0;i<2.0*M_PI;i+=0.1*M_PI)
-    {
-        x.append(i);
-        y.append(std::sin(i));
-    }
-    QVariantList columns;
-    columns.append(QVariant::fromValue(x));
-    columns.append(QVariant::fromValue(y));
-    m["columns"] = columns;
-    m["realtime"] = false;
-
-    auto p=new qcpPlotView(m, this);
-    auto sub=new customMdiSubWindow(p->widget(), this);
-    ui->mdiArea->addSubWindow(sub);
-    sub->setWindowTitle("Plot View");
-    sub->show();
-}
-#else
-void MainWindow::create_qcp_example_realtime()
-{
-    _qcp_example_t = 0.0;
-
-    QVariantMap  m;
-
-    QStringList header;
-    header << "X" << "Y1" << "Y2";
-    m["headers"] = header;
-    m["realtime"] = true;
-
-    auto p=new qcpPlotView(m, this);
-    auto sub=new customMdiSubWindow(p->widget(), this);
-    ui->mdiArea->addSubWindow(sub);
-    sub->setWindowTitle("Plot View");
-    sub->show();
-
-    QTimer *tqcp=new QTimer(this);
-    connect(tqcp,&QTimer::timeout, this, [=]()
-    {
-        QVector<double> data;
-        data.append(_qcp_example_t); //x axis
-        data.append(std::sin(2.0*3.14159*_qcp_example_t/1.0)); //y axis
-        if(!(int)(std::fmod(_qcp_example_t,10.0)*100.0)) data.append(std::nan("")); //append nan for no data
-        else  data.append(std::cos(2.0*3.14159*_qcp_example_t/1.0)); //y axis
-        p->addData(data);
-        _qcp_example_t += 0.05; //50msec
-    });
-    tqcp->setInterval(50);
-    tqcp->start();
-}
-#endif
-#endif
-#endif
-
-
-#include "serialPortDialog.h"
-#include <QSerialPort>
-void MainWindow::on_actionSerial_port_triggered()
-{
-    serialPortDialog dlg(this);
-    if(dlg.exec()==QDialog::Accepted)
-    {
-        auto port = dlg.get(this);
-        if(port->open(QIODevice::ReadWrite))
-        {
-            qDebug()<< "Serial port is opened" << port->portName();
-
-
-            port->close();  //this is just example code
-        }
-        else
-        {
-            qDebug()<< "Serial port open failed" << port->portName();
-        }
-    }
-}
-
-#include "tcpClientDialog.h"
-
-void MainWindow::on_actionTCP_Client_triggered()
-{
-    tcpClientDialog dlg(this);
-    if(dlg.exec()==QDialog::Accepted)
-    {
-
-    }
-}
-
-
-
-

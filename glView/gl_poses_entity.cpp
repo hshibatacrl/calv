@@ -1,29 +1,16 @@
 /*
-MIT License
+Copyright 2021 Wagon Wheel Robotics
 
-Copyright (c) 2021 WagonWheelRobotics
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "gl_poses_entity.h"
 
+#include "pose_packet.h"
 #include "rot.h"
 
 #include <mutex>
@@ -47,37 +34,56 @@ gl_poses_entity::~gl_poses_entity()
 int gl_poses_entity::load_mem(const uint8_t *buf, size_t length)
 {
     int ret=0;
-     _localOrigin = QVector3D(0.0f,0.0f,0.0f); // East-North-Up
-     setObjectName("pose test");
-
-    QVector<float> p;
-    if(!buf[0])
-    {   // x,y,z r,p,y
-        p<< 0.0f << 0.0f << 0.0f << 0.0f << 0.0f << 0.0f;
-        p<< 2.0f << 0.0f << 0.0f << 10.0f << 0.0f << 45.0f;
-        p<< 4.0f << 0.0f << 0.0f << 20.0f << 0.0f << 90.0f;
-        p<< 6.0f << 0.0f << 0.0f << 10.0f << 0.0f << 45.0f;
-        p<< 8.0f << 0.0f << 0.0f << 0.0f << 10.0f << 0.0f;
-        p<< 10.0f << 0.0f << 0.0f << 0.0f << 20.0f << -45.0f;
-    }
-    else
+    const pose_packet_header_t *header = (const pose_packet_header_t *) buf;
+    const uint8_t *top = buf;
+    if (header->magic == POSE_MAGIC)
     {
-        p<< 11.0f << 0.0f << 0.0f << 0.0f << 10.0f << -90.0f;
-        p<< 13.0f << 0.0f << 0.0f << 10.0f << 0.0f << -45.0f;
-        p<< 15.0f << 0.0f << 0.0f << 20.0f << 0.0f << 0.0f;
-        p<< 17.0f << 0.0f << 0.0f << 10.0f << 0.0f << 0.0f;
-        p<< 19.0f << 0.0f << 0.0f << 0.0f << 10.0f << 0.0f;
-        p<< 21.0f << 0.0f << 0.0f << 0.0f << 20.0f << 0.0f;
-    }
+        if(header->length <= length)
+        {
+            top+= sizeof(pose_packet_header_t);
+            if(header->type & POSE_ORG)
+            {//optional
+                 const pose_origin_t *org = (const pose_origin_t *)top;
+                 GLfloat x = org->xyz[0];    //Right
+                 GLfloat y = org->xyz[1];    //Down
+                 GLfloat z = org->xyz[2];    //Forward
+                 _localOrigin = QVector3D(z,-x,-y); // East-North-Up
+                 top+=sizeof(pose_origin_t);
+            }
 
-    pose_t pose;
-    for(int i=0;i<p.size()/6;i++)
-    {
-        pose.p=QVector3D(p.at(i*6+0),p.at(i*6+1),p.at(i*6+2));
-        QVector3D rpy(p.at(i*6+3)*rot::d2r,p.at(i*6+4)*rot::d2r,p.at(i*6+5)*rot::d2r);
-        rot::euler_to_quat(pose.q,rpy);
-        _poses.append(pose);
-        ret++;
+            if(header->type & POSE_TXT)
+            {//optional
+                const pose_text_t *txt = (const pose_text_t *)top;
+                top += sizeof(pose_text_t);
+                std::string text( (const char*)top, txt->length );
+                setObjectName(QString::fromStdString(text));
+                top += txt->length;
+            }
+
+            //required block
+            const pose_payload_t* p = (const pose_payload_t*)top;
+            for(uint32_t i=0;i<header->numPose;i++)
+            {
+                pose_t pose;
+
+                GLfloat rx = p[i].rvec[0];    //Right
+                GLfloat ry = p[i].rvec[1];    //Down
+                GLfloat rz = p[i].rvec[2];    //Forward
+
+                QMatrix3x3 R;
+                QVector3D rvec(rz, -rx, -ry);   // convert to E-N-U (Forward-Left-Up)
+                rot::dcm_from_rodrigues(R,rvec);
+                rot::dcm_to_quat(pose.q,R);
+
+                GLfloat x = p[i].tvec[0];    //Right
+                GLfloat y = p[i].tvec[1];    //Down
+                GLfloat z = p[i].tvec[2];    //Forward
+                pose.p=QVector3D(z, -x, -y);  // convert to E-N-U (Forward-Left-Up)
+
+                _poses.append(pose);
+                ret++;
+            }
+        }
     }
 
     return ret;

@@ -1,6 +1,20 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+/**
+ * @file MainWindow.h
+ *
+ * Definitions of camera objects used in the calibration process
+ *
+ * Copyright 2023
+ * Carnegie Robotics, LLC
+ * 4501 Hatfield Street, Pittsburgh, PA 15201
+ * https://www.carnegierobotics.com
+ *
+ * Significant history (date, user, job code, action):
+ *   2023-12-13, hshibata@carnegierobotics.com, IRAD2033, Taken and modified file from open source.
+ */
+
 /*
 MIT License
 
@@ -27,19 +41,20 @@ SOFTWARE.
 
 
 #include <QMainWindow>
+#include <QMap>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-#ifdef USE_MAP_VIEW
 class customMapView;
-#endif
-
 class customFloatingWindow;
+class customMdiSubWindow;
 class QMdiSubWindow;
 class customGLWidget;
-class customMdiSubWindow;
+class QFile;
+class QLabel;
+class fdd;
 class gl_entity_ctx;
 
 class MainWindow : public QMainWindow
@@ -52,65 +67,58 @@ public:
 
     Q_INVOKABLE void attachToMdi(QObject *fltWindow);
     Q_INVOKABLE void detachFromMdi(QObject *mdiWindow);
+    
+private:
+    void closeLog(void);
+    void writeLog(const QByteArray &bytes);
+    QString logFolder(void);
+
+    bool IS_ENABLE(int x) const;
+    bool IS_SHOWN(int x) const;
+
+    void reset(void);
 
 public slots:
     void logMessage(int level,QString text);
 
 protected:
-#ifdef USE_IMAGE_VIEW
-    void openImage(const QString &fileName);
-#endif
 
-#ifdef USE_3D_VIEW
     void create3DView(void);
-#endif
-
-#ifdef USE_MAP_VIEW
-    void createMapView(void);
-#endif
 
 private slots:
+    void on_action3D_View_triggered();
+
     void on_actionConfigure_3D_View_triggered();
 
     void on_actionAbout_triggered();
 
-    void on_action3D_View_triggered();
+    void on_actionConnect_to_Server_triggered();
 
-    void on_actionSerial_port_triggered();
+    void on_actionRecord_Log_triggered();
 
-    void on_actionTCP_Client_triggered();
-
-#ifdef USE_MAP_VIEW
-    void on_actionMap_View_triggered();
-#endif
-
-private:
-
-#ifdef USE_PLOT_VIEW
-#ifdef EXAMPLE_CODE_QCP
-#ifdef EXAMPLE_CODE_QCP_STATIC_PLOT
-    void create_qcp_example_static();
-#else
-    double _qcp_example_t;
-    void create_qcp_example_realtime();
-#endif
-#endif
-#endif
+    void on_actionPlayback_Log_triggered();
 
 private:
     Ui::MainWindow *ui;
 
-#ifdef USE_3D_VIEW
+    fdd *_dec;
+
     customGLWidget *_glWidget;
-    gl_entity_ctx *_stockModelPending;
-    gl_entity_ctx *_stockModel;
-#endif
 
+    QMap<int, customMdiSubWindow*> _mdi;
     QList<customFloatingWindow*> _floating;
-    QList<customMdiSubWindow*> _mdi;
 
-#ifdef USE_MAP_VIEW
-    customMapView *_mapWidget;
-#endif
+    int _init;
+
+    int _logging;
+    QFile *_log;
+
+    QTimer *_timer;
+    QLabel *_logStatus;
+    QLabel *_inpStatus;
+
+    QMap<int, gl_entity_ctx *> _stockModelPending;
+    QMap<int, gl_entity_ctx *> _stockModel;
+
 };
 #endif // MAINWINDOW_H

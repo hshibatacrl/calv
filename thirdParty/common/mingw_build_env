@@ -1,3 +1,0 @@
-qtver=5.12.12
-
-export PATH=/c/Qt/$qtver/mingw73_64/bin:/c/Qt/Tools/mingw730_64/bin:/c/Qt/Tools/CMake_64/bin:$PATH

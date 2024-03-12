@@ -17,7 +17,6 @@ HEADERS += \
     $$PWD/gl_poses_entity.h \
     $$PWD/gl_stock_entity.h \
     $$PWD/model.h \
-    $$PWD/pointcloud_packet.h \
     $$PWD/qt_opengl_unproj.h \
     $$PWD/rot.h \
     $$PWD/viewOptionsDialog.h

@@ -1,30 +1,15 @@
 /*
-MIT License
+Copyright 2021 Wagon Wheel Robotics
 
-Copyright (c) 2021 WagonWheelRobotics
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "gl_pcloud_entity.h"
-
-#include <cmath>
+#include "pointcloud_packet.h"
 
 #include <QOpenGLShaderProgram>
 #include <QFileInfo>
@@ -86,69 +71,86 @@ void gl_pcloud_entity::cleanup(void)
         _vertex=nullptr;
     }
 
-    foreach(auto &i, _prg)
     {
-        delete i;
+        std::lock_guard lock(_prgMutex);
+
+        if(!--_prgCount)
+        {
+            foreach(auto &i, _prg)
+            {
+                i->deleteLater();
+            }
+            _prg.clear();
+        }
     }
-    _prg.clear();
 }
 
 
 int gl_pcloud_entity::load_mem(const uint8_t *buf, size_t length)
 {
-    //
-    // Example code, have to re-implement for each application
-    //
-
-    _localOrigin = QVector3D(0.0f, 0.0f, 0.0f);
-    setObjectName(QString("pcloud test"));
-
-    quint64 nPoints = 36000;
-
-    _rgb = 3;
-    _amp = 6;
-    _rng = 7;
-    _flg = 8;
-
-    _format = 0;
-    _nElement = 9;
-
-    _nVertex = nPoints;
-    _vertex = new GLfloat [_nElement*_nVertex];
-
-    float radius;
-    const float d2r = M_PI/180.0;
-
-    GLfloat *w=_vertex;
-    for(quint64 i=0; i<nPoints; i++)
+    const pc_packet_header_t *header = (const pc_packet_header_t *) buf;
+    const uint8_t *top = buf;
+    if (header->magic == PC_MAGIC)
     {
-        radius = 1.0f+(float)i * 0.01f;
-        float x = radius*std::sin((float) i * d2r);
-        float y = radius*std::cos((float) i * d2r);
-        float z = 0.005f * (float)i + 50.0f*std::sin(10.0f*(float)i * d2r);
+        if(header->length <= length)
+        {
+            top+= sizeof(pc_packet_header_t);
+            if(header->type & PC_ORG)
+            {//optional
+                 const pc_origin_t *org = (const pc_origin_t *)top;
 
-        float r = std::sin(2.0f*(float)i * d2r);
-        float g = std::cos(2.0f*(float)i * d2r);
-        float b = std::sin(4.0f*(float)i * d2r);
+                 GLfloat x = org->xyz[0];    //Right
+                 GLfloat y = org->xyz[1];    //Down
+                 GLfloat z = org->xyz[2];    //Forward
+                 _localOrigin = QVector3D(z,-x,-y); // East-North-Up
+                 top+=sizeof(pc_origin_t);
+            }
 
-        float amp = r+g;
-        float rng = g+b;
+            if(header->type & PC_TXT)
+            {//optional
+                const pc_text_t *txt = (const pc_text_t *)top;
+                top += sizeof(pc_text_t);
+                std::string text( (const char*)top, txt->length );
+                setObjectName(QString::fromStdString(text));
+                top += txt->length;
+            }
 
-        *w++ = x;
-        *w++ = y;
-        *w++ = z;
+            //required block
+            const pc_payload_t* pc = (const pc_payload_t*)top;
 
-        *w++ = r;
-        *w++ = g;
-        *w++ = b;
+            int p=3;
+            if(pc->format & PC_RGB){ _rgb = p; p+=3; }
+            if(pc->format& PC_AMP){ _amp = p; p+=1; }
+            if(pc->format & PC_RNG){ _rng = p; p+=1; }
+            _flg = p; p+=1; //add a flag
 
-        *w++ = amp;
-        *w++ = rng;
+            _format = pc->format & 0x000000ff;
+            _nElement = p;
+            _nVertex = (quint64) pc->nPoints;
+            _vertex = new GLfloat [_nElement*_nVertex];
 
-        *w++ = 0.0f;    //flag
+            top+=sizeof(pc_payload_t);
+            const GLfloat *v=(const GLfloat *)top;
+            GLfloat *w=_vertex;
+            for(quint64 i=0;i<_nVertex;i++)
+            {
+                GLfloat x = *v++;    //Right
+                GLfloat y = *v++;    //Down
+                GLfloat z = *v++;    //Forward
+                *w++ =  z; //East
+                *w++ = -x; //North
+                *w++ = -y; //Up
+                memcpy(w, v, sizeof(GLfloat)*(_nElement-1-3));
+                v+=_nElement-1-3;
+                w+=_nElement-1-3;
+                *w=0.0f;    //flag
+                w++;
+            }
+
+            return _nVertex;
+        }
     }
-
-    return _nVertex;
+    return 0;
 }
 
 void gl_pcloud_entity::load(void)

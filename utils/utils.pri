@@ -1,6 +1,6 @@
 FORMS += \
     $$PWD/aboutDialog.ui \
-    $$PWD/serialPortDialog.ui \
+#   $$PWD/serialPortDialog.ui \
     $$PWD/tcpClientDialog.ui
 
 HEADERS += \
@@ -11,7 +11,7 @@ HEADERS += \
     $$PWD/customMdiSubWindow.h \
     $$PWD/interp1d.h \
     $$PWD/logging.h \
-    $$PWD/serialPortDialog.h \
+#    $$PWD/serialPortDialog.h \
     $$PWD/tcpClientDialog.h
 
 SOURCES += \
@@ -21,7 +21,7 @@ SOURCES += \
     $$PWD/customFloatingWindow.cpp \
     $$PWD/customMdiSubWindow.cpp \
     $$PWD/logging.cpp \
-    $$PWD/serialPortDialog.cpp \
+#   $$PWD/serialPortDialog.cpp \
     $$PWD/tcpClientDialog.cpp
 
 INCLUDEPATH += $$PWD

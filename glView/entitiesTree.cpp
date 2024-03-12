@@ -1,25 +1,26 @@
+/**
+ * @file entitiesTree.cpp
+ *
+ * Definitions of camera objects used in the calibration process
+ *
+ * Copyright 2023
+ * Carnegie Robotics, LLC
+ * 4501 Hatfield Street, Pittsburgh, PA 15201
+ * https://www.carnegierobotics.com
+ *
+ * Significant history (date, user, job code, action):
+ *   2023-12-13, hshibata@carnegierobotics.com, IRAD2033, Taken and modified file from open source.
+ */
+
+
 /*
-MIT License
+Copyright 2021 Wagon Wheel Robotics
 
-Copyright (c) 2021 WagonWheelRobotics
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "entitiesTree.h"
@@ -56,6 +57,18 @@ entitiesTree::entitiesTree(QWidget *parent):QTreeWidget(parent)
                 connect(b, &QAction::triggered, this, [=](){ for(auto &i:_rev) showItem(i,prefix); });
                 sub->addAction(b);
                 menu.addMenu(sub);
+            }
+            menu.addSeparator();
+
+            {
+                auto a=new QAction("Hide All", this);
+                connect(a, &QAction::triggered, this, [=](){ for(auto &i:_rev) i->setCheckState(0,Qt::Unchecked); });
+                menu.addAction(a);
+            }
+            {
+                auto a=new QAction("Show All", this);
+                connect(a, &QAction::triggered, this, [=](){ for(auto &i:_rev) i->setCheckState(0,Qt::Checked); });
+                menu.addAction(a);
             }
             menu.addSeparator();
         }
@@ -193,6 +206,6 @@ void entitiesTree::showItem(QTreeWidgetItem *x, QString prefix)
 QStringList entitiesTree::prefixes()
 {
     QStringList ret;
-    ret <<"pose"<<"pcloud";
+    ret <<"pose0"<<"pose1"<<"pc0"<<"pc1";
     return ret;
 }

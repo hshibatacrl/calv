@@ -45,6 +45,8 @@
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="actionRecord_Log"/>
+    <addaction name="actionPlayback_Log"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -52,8 +54,6 @@
     </property>
     <addaction name="action3D_View"/>
     <addaction name="actionConfigure_3D_View"/>
-    <addaction name="separator"/>
-    <addaction name="actionMap_View"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -65,12 +65,11 @@
     <property name="title">
      <string>Comm</string>
     </property>
-    <addaction name="actionSerial_port"/>
-    <addaction name="actionTCP_Client"/>
+    <addaction name="actionConnect_to_Server"/>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuView"/>
    <addaction name="menuComm"/>
+   <addaction name="menuView"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -136,9 +135,6 @@
        <attribute name="headerVisible">
         <bool>false</bool>
        </attribute>
-       <attribute name="headerStretchLastSection">
-        <bool>false</bool>
-       </attribute>
        <column>
         <property name="text">
          <string notr="true">1</string>
@@ -164,30 +160,36 @@
     <string>About</string>
    </property>
   </action>
+  <action name="actionConnect_to_Server">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Connect to Server</string>
+   </property>
+  </action>
+  <action name="actionRecord_Log">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Record Log</string>
+   </property>
+  </action>
+  <action name="actionPlayback_Log">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Playback Log</string>
+   </property>
+  </action>
   <action name="action3D_View">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
     <string>3D View</string>
-   </property>
-  </action>
-  <action name="actionSerial_port">
-   <property name="text">
-    <string>Serial port</string>
-   </property>
-  </action>
-  <action name="actionTCP_Client">
-   <property name="text">
-    <string>TCP Client</string>
-   </property>
-  </action>
-  <action name="actionMap_View">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Map View</string>
    </property>
   </action>
  </widget>
