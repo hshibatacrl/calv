@@ -3,8 +3,8 @@ HEADERS += \
 #    $$PWD/../../featureDetector/fdv/cameraConnectDialog.h \
     $$PWD/../../featureDetector/fdv/fdd.h \
     $$PWD/../../featureDetector/src/orb_packet_type.h \
-    $$PWD/../../oncal/src/pointcloud_packet.h \
-    $$PWD/../../oncal/src/pose_packet.h
+    $$PWD/../../featureBasedCameraCalib/oncal/src/pointcloud_packet.h \
+    $$PWD/../../featureBasedCameraCalib/oncal/src/pose_packet.h
 
 SOURCES += \
     $$PWD/../../featureDetector/client/fdc.cc \
@@ -14,7 +14,7 @@ SOURCES += \
 #FORMS += \
 #    $$PWD/../../featureDetector/fdv/cameraConnectDialog.ui
 
-INCLUDEPATH += $$PWD/../../oncal/src \
+INCLUDEPATH += $$PWD/../../featureBasedCameraCalib/oncal/src \
                $$PWD/../../featureDetector/src \
                $$PWD/../../featureDetector/client \
                $$PWD/../../featureDetector/fdv
