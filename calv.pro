@@ -37,7 +37,7 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-VERSION = 1.0
+VERSION = 1.0a
 
 DEFINES += APP_NAME=\\\"$$TARGET\\\"
 DEFINES += APP_VERSION=\\\"$$VERSION\\\"
@@ -45,3 +45,4 @@ DEFINES += APP_VERSION_QT=\\\"$$QT_VERSION\\\"
 DEFINES += "COMPANY_NAME=\"\\\"Carnegie Robotics\\\"\""
 DEFINES += "COPYRIGHT_YEAR=\"\\\"2023\\\"\""
 
+win32:RC_ICONS += crl32.ico
