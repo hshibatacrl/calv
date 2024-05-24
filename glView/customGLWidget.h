@@ -183,6 +183,7 @@ private:
 
     QVariantMap _viewOptionsStorage;
     viewOptions _viewOptions;
+
 };
 
 #define CAM_PERSPECTIVE 0

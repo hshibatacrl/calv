@@ -120,5 +120,6 @@ private:
     QMap<int, gl_entity_ctx *> _stockModelPending;
     QMap<int, gl_entity_ctx *> _stockModel;
 
+
 };
 #endif // MAINWINDOW_H

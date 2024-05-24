@@ -157,7 +157,9 @@ MainWindow::MainWindow(QWidget *parent)
             {
                 const pc_packet_header_t *p = (const pc_packet_header_t *)packet.data();
                 qDebug()<<"Point Cloud" << p->length;
-                _glWidget->delayLoad(new gl_pcloud_entity, packet);
+                auto obj=new gl_pcloud_entity;
+                ui->tree->created(obj);
+                _glWidget->delayLoad(obj, packet);
             }
             if(magic[0]==POSE_MAGIC)
             {
@@ -165,7 +167,9 @@ MainWindow::MainWindow(QWidget *parent)
                 qDebug()<<"Pose Cloud" << p->length;
                 if(_stockModel.contains(p->data[0]))
                 {
-                    _glWidget->delayLoad(new gl_poses_entity(_stockModel[p->data[0]]), packet);
+                    auto obj=new gl_poses_entity(_stockModel[p->data[0]]);
+                    ui->tree->created(obj);
+                    _glWidget->delayLoad(obj, packet);
                 }
                 else
                 {

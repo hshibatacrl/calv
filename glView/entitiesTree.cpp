@@ -30,6 +30,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <QMenu>
 #include <QAction>
 #include <QDebug>
+#include <QTimer>
 
 #define ROLE_CTX (Qt::UserRole+1)
 
@@ -116,6 +117,10 @@ entitiesTree::entitiesTree(QWidget *parent):QTreeWidget(parent)
         }
 
     });
+
+    QTimer *timer=new QTimer(this);
+    connect(timer,SIGNAL(timeout()),this, SLOT(check()),Qt::QueuedConnection);
+    timer->start(500);
 }
 
 void entitiesTree::link(customGLWidget *glWidget)
@@ -136,7 +141,45 @@ void entitiesTree::link(customGLWidget *glWidget)
     });
 }
 
+void entitiesTree::check()
+{
+    if(!_order.size()) return;
+    if(!_loaded.size()) return;
+
+    for(;_order.size();)
+    {
+        auto target=_order.first();
+        if(_loaded.contains(target))
+        {
+            _loaded.removeAll(target);
+            _order.pop_front();
+            loadedCore(target);
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
+void entitiesTree::created(QObject *x)
+{
+    _order.append(x);
+}
+
 void entitiesTree::loaded(QObject *x)
+{
+    if(_order.contains(x))
+    {
+        _loaded.append(x);
+    }
+    else
+    {
+        loadedCore(x);
+    }
+}
+
+void entitiesTree::loadedCore(QObject *x)
 {
     gl_entity_ctx *loaded= qobject_cast<gl_entity_ctx*>(x);
     if(loaded->is_valid())
@@ -209,3 +252,4 @@ QStringList entitiesTree::prefixes()
     ret <<"pose0"<<"pose1"<<"pc0"<<"pc1";
     return ret;
 }
+

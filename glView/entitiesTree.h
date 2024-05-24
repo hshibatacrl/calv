@@ -25,7 +25,11 @@ public:
 
     void link(customGLWidget *glWidget);
 
+private slots:
+    void check(void);
+
 public slots:
+    void created(QObject *x);
     void loaded(QObject *x);
     void unloaded(QObject *x);
 
@@ -35,9 +39,13 @@ protected:
     void showItem(QTreeWidgetItem *x, QString prefix);
 
     virtual QStringList prefixes(void);
+
+    void loadedCore(QObject *x);
 private:
     customGLWidget *_glWidget;
     QMap<QUuid, QTreeWidgetItem*> _rev;
+    QList<QObject*> _order;
+    QList<QObject*> _loaded;
 };
 
 #endif // ENTITIESTREE_H
