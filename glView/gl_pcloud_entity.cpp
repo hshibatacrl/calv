@@ -72,7 +72,7 @@ void gl_pcloud_entity::cleanup(void)
     }
 
     {
-        std::lock_guard lock(_prgMutex);
+        std::lock_guard<std::mutex> lock(_prgMutex);
 
         if(!--_prgCount)
         {
@@ -229,7 +229,7 @@ int gl_pcloud_entity::prepare_gl(void)
     term_thread();
 
     {
-        std::lock_guard lock(_prgMutex);
+        std::lock_guard<std::mutex> lock(_prgMutex);
         if(!_prg.size())
         {
             auto x=new QOpenGLShaderProgram;
