@@ -36,6 +36,8 @@ customMdiSubWindow::customMdiSubWindow(QWidget *widget, QWidget *parent, Qt::Win
 {
     _mainWindow=parent;
 
+    setWindowIcon(QIcon(":/icons/crl.png"));
+
     layout()->setContentsMargins(0,0,0,0);
     setWidget(widget);
 

@@ -291,7 +291,6 @@ void gl_model_entity::update_group_matrix(int id,QMatrix4x4 &local)
     {
         if( axis[id].isNull() ) return;
     }
-
     QMatrix4x4 a,b,c;
     a.setToIdentity();  a.translate(-cg[id]);
     b.setToIdentity();  b.rotate(fmod(inc,360.0),axis[id]);
@@ -332,13 +331,16 @@ void gl_model_entity::draw_gl(gl_draw_ctx_t &draw)
 
         for(model_elements_t::iterator i=model_elements.begin();i!=model_elements.end();i++)
         {
+            QMatrix4x4 scale;
+            scale.setToIdentity();
+            scale.scale(draw.modelScale);
             if((*i)->group_top)
             {
                 QMatrix4x4 x;
                 x.setToIdentity();
                 update_group_matrix((*i)->group_id, x);
 
-                QMatrix4x4 modelview=draw.camera * draw.world * offset * local * x;
+                QMatrix4x4 modelview=draw.camera * draw.world * offset * local * x * scale;
                 p->setUniformValue(mvMat, modelview);
                 p->setUniformValue(norMat, modelview.normalMatrix());
             }

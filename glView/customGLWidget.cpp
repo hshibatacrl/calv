@@ -144,6 +144,27 @@ void customGLWidget::load_stock(void)
 
 }
 
+void customGLWidget::resetCamera(void)
+{
+    //initialize camera parameter (dcm, POI and range)
+    QVector3D e(10.0*rot::d2r,20.0*rot::d2r,30.0*rot::d2r);	//initial attitude of camera : roll,pitch yaw
+    rot::euler_to_quat(_quat, e);
+
+    _range=50.0;
+    _poi=QVector3D(0.0f,0.0f,0.0f);
+    update_by_poi();
+
+    QMatrix3x3 dcm;
+    rot::dcm_from_quat(dcm,_quat);
+
+    _pot[0]= -std::atan2(-dcm(0,2),dcm(2,2))*rot::r2d;
+    _pot[1]= -std::atan2(dcm(1,0),dcm(1,1))*rot::r2d;
+
+    _draw.modelScale = 1.0f;
+    _draw.opt_pc.psz = 2.0f;
+}
+
+
 void customGLWidget::initializeGL()
 {
     memset(&_draw,0,sizeof(gl_draw_ctx_t));
@@ -163,19 +184,9 @@ void customGLWidget::initializeGL()
     _draw.eyeDomeLighting=1;
     _draw.pointAntiAlias=1;
 
-    //initialize camera parameter (dcm, POI and range)
-    QVector3D e(10.0*rot::d2r,20.0*rot::d2r,30.0*rot::d2r);	//initial attitude of camera : roll,pitch yaw
-    rot::euler_to_quat(_quat, e);
+    _draw.modelScale = 1.0f;
 
-    _range=50.0;
-    _poi=QVector3D(0.0f,0.0f,0.0f);
-    update_by_poi();
-
-    QMatrix3x3 dcm;
-    rot::dcm_from_quat(dcm,_quat);
-
-    _pot[0]= -std::atan2(-dcm(0,2),dcm(2,2))*rot::r2d;
-    _pot[1]= -std::atan2(dcm(1,0),dcm(1,1))*rot::r2d;
+    resetCamera();
 
     _next_mode=GL_DRAW_NORMAL;
 
@@ -597,7 +608,7 @@ void customGLWidget::keyPressEvent(QKeyEvent *event)
     case    Qt::Key_A:  break;
     case    Qt::Key_M:  break;
 
-    case    Qt::Key_Escape:  break;
+    case    Qt::Key_Escape:  resetCamera(); draftUpdate(); break;
     case    Qt::Key_1:  onCmPerspectiveView(true);    break;
     case    Qt::Key_2:  onCmOrthoView(true);          break;
     case    Qt::Key_3:     break;
@@ -607,10 +618,45 @@ void customGLWidget::keyPressEvent(QKeyEvent *event)
 
 void customGLWidget::wheelEvent(QWheelEvent *event)
 {
+    bool update=false;
     QPoint d = event->angleDelta();
-    if(zoomInput(-d.y()*0.01/8.0))
+    if(event->modifiers() & Qt::ShiftModifier)
     {
-        update_by_poi();
+        auto s=_draw.modelScale;
+        auto gain=1.0-d.y()*0.01/8.0;
+        float s1 = gain * s;
+
+        if(0.1f<s1 && s1<10.0f)
+        {
+            _draw.modelScale = gain * s;
+            update=true;
+        }
+    }
+
+    if(event->modifiers() & Qt::ControlModifier)
+    {
+        auto s=_draw.opt_pc.psz;
+        auto gain=1.0-d.y()*0.01/8.0;
+        float s1 = gain * s;
+
+        if(1.0f<s1 && s1<10.0f)
+        {
+            _draw.opt_pc.psz = gain * s;
+            update=true;
+        }
+    }
+
+    if(event->modifiers() == Qt::NoModifier)
+    {
+        if(zoomInput(-d.y()*0.01/8.0))
+        {
+            update_by_poi();
+            update=true;
+        }
+    }
+
+    if(update)
+    {
         draftUpdate();
     }
 }

@@ -99,6 +99,8 @@ protected:
     int pottersWheelInput(double dx,double dy);
     int cameraLookingDown(void);
 
+    void resetCamera(void);
+
     using OpenGLFunctions = QOpenGLFunctions_2_1;
 
     //! Returns the set of OpenGL functions

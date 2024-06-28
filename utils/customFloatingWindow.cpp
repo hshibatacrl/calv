@@ -35,6 +35,8 @@ SOFTWARE.
 
 customFloatingWindow::customFloatingWindow(QWidget *widget, QWidget *parent) : QMainWindow(parent)
 {
+    setWindowIcon(QIcon(":/icons/crl.png"));
+
     setCentralWidget(widget);
     widget->setProperty("frame", QVariant::fromValue(this));
 

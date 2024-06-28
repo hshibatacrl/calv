@@ -117,6 +117,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    setWindowIcon(QIcon(":/icons/crl.png"));
+
     _dec = new fdd(this);
     _inpStatus = new QLabel(this);
     _logStatus = new QLabel(this);

@@ -46,3 +46,6 @@ DEFINES += "COMPANY_NAME=\"\\\"Carnegie Robotics\\\"\""
 DEFINES += "COPYRIGHT_YEAR=\"\\\"2023\\\"\""
 
 win32:RC_ICONS += crl32.ico
+
+RESOURCES += \
+    images.qrc

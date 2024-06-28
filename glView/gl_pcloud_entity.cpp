@@ -50,7 +50,7 @@ void gl_pcloud_entity::init_opt_pc(opt_pointcloud_t &p)
 {
     p.color_mode = OPT_PC_CM_HEIGHT;
     p.flags = 0;
-    p.psz=2.0f;
+    p.psz=3.0f;
     p.amp[0]=0.0f;
     p.amp[1]=255.0f;
     p.rng[0]=0.0f;
@@ -407,7 +407,7 @@ void gl_pcloud_entity::draw_gl(gl_draw_ctx_t &draw)
     GLfloat z0 = _localOrigin.z();
 
     mode=draw.opt_pc.color_mode;
-    psz=draw.opt_pc.psz + 1.0f;
+    psz=draw.opt_pc.psz;
 
     if(draw.mode==GL_DRAW_PICK)
     {

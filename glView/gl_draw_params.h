@@ -52,6 +52,7 @@ typedef struct
     int eyeDomeLighting;
     bool draftOnly;
     opt_pointcloud_t opt_pc;
+    float modelScale;
 } gl_draw_ctx_t;
 
 #define GL_DRAW_NORMAL  1
