@@ -586,7 +586,7 @@ void customGLWidget::mouseDoubleClickEvent(QMouseEvent *event)
 
 void customGLWidget::keyPressEvent(QKeyEvent *event)
 {
-    qDebug()<<"key"<<event->key();
+    //qDebug()<<"key"<<event->key();
     switch(event->key())
     {
     case    Qt::Key_F9:

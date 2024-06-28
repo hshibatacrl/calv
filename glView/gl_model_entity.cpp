@@ -88,7 +88,7 @@ void gl_model_entity::load(void)
         {
             if(!(*i).visible) continue;
 
-            if(sscanf_s((*i).name.c_str(),"#OBJ%d_",&a)==1)
+            if(sscanf((*i).name.c_str(),"#OBJ%d_",&a)==1)
             {
                 (*i).obj_id=a;
                 if(h<a) h=a;
